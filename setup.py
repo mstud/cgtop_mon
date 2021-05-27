@@ -9,7 +9,7 @@ setup(
     scripts=[],
     entry_points="""
       [console_scripts]
-      cgtop_mon=cgtop_mon
+      cgtop_mon=cgtop_mon:main
       """,
     install_requires=[
         "influxdb",
