@@ -3,7 +3,17 @@
 import subprocess
 import os
 import socket
+from time import time
 from influxdb import InfluxDBClient
+
+LOG_THROTTLE_RATE_S = 60
+
+def convert(data_type, string):
+    try:
+        ret = data_type(string)
+    except ValueError:
+        return None
+    return ret
 
 def main():
     send_buffer_size = os.getenv("CGTOP_MON_SEND_BUFSIZE", 10)
@@ -30,6 +40,7 @@ def main():
     blacklist = [x for x in os.getenv("CGTOP_MON_BLACKLIST", "").split(",") if x]
     whitelist = [x for x in os.getenv("CGTOP_MON_WHITELIST", "").split(",") if x]
 
+    last_log_time = 0
     with subprocess.Popen(
         cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True
     ) as p:
@@ -49,26 +60,27 @@ def main():
             if name in blacklist or (whitelist and (name not in whitelist)):
                 continue
 
-            try:
-                json_body = {
-                    "measurement": os.getenv("CGTOP_MON_HOSTNAME", socket.gethostname()),
-                    "tags": {"name": name},
-                    "fields": {
-                        "cpu": float(cpu_percent),
-                        "memory": int(memory),
-                        "tasks": int(tasks),
-                    },
-                }
-                if prefix:
-                    json_body["tags"]["prefix"] = prefix
-            except ValueError:
-                continue
-            
+            json_body = {
+                "measurement": os.getenv("CGTOP_MON_HOSTNAME", socket.gethostname()),
+                "tags": {"name": name},
+                "fields": {
+                    "cpu": convert(float, cpu_percent),
+                    "memory": convert(int, memory),
+                    "tasks": convert(int, tasks),
+                },
+            }
+            if prefix:
+                json_body["tags"]["prefix"] = prefix
+
             to_send.append(json_body)
             if len(to_send) > send_buffer_size:
                 try:
                     client.write_points(to_send)
-                except Exception:
+                except Exception as e:
+                    now = time()
+                    if now - last_log_time > LOG_THROTTLE_RATE_S:
+                        print(e)
+                        last_log_time = now
                     continue
                 to_send.clear()
 
