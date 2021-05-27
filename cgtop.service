@@ -1,0 +1,14 @@
+[Unit]
+Description=Monitor systemd cgroup memory and CPU usage
+After=network.target
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/cgtop_mon.conf
+ExecStart=cgtop_mon
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
+
