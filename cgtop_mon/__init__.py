@@ -2,6 +2,7 @@
 
 import subprocess
 import os
+import socket
 from influxdb import InfluxDBClient
 
 SEND_BUFFER_SIZE = os.getenv("CGTOP_MON_SEND_BUFSIZE", 10)
@@ -49,7 +50,7 @@ with subprocess.Popen(
         
         try:
             json_body = {
-                "measurement": "service",
+                "measurement": os.getenv("CGTOP_MON_HOSTNAME", socket.gethostname()),
                 "tags": {"name": name},
                 "fields": {
                     "cpu": float(cpu_percent),
