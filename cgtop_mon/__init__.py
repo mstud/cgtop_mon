@@ -63,9 +63,9 @@ def main():
                     json_body["tags"]["prefix"] = prefix
             except ValueError:
                 continue
-            print(json_body)
+            
             to_send.append(json_body)
-            if len(to_send) > SEND_BUFFER_SIZE:
+            if len(to_send) > send_buffer_size:
                 try:
                     client.write_points(to_send)
                 except Exception:
