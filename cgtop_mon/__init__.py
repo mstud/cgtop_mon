@@ -50,6 +50,11 @@ def main():
             if not line:
                 continue
             cg, tasks, cpu_percent, memory, input_per_sec, output_per_sec = line
+            cpu_percent = convert(float, cpu_percent)
+            memory = convert(int, memory)
+            tasks = convert(int, tasks)
+            if (cpu_percent is None) and (memory is None) and (tasks is None):
+                continue # no usable datapoint, skip
 
             cg_split = cg.split("/")
             name = cg_split[-1]
@@ -64,9 +69,9 @@ def main():
                 "measurement": os.getenv("CGTOP_MON_HOSTNAME", socket.gethostname()),
                 "tags": {"name": name},
                 "fields": {
-                    "cpu": convert(float, cpu_percent),
-                    "memory": convert(int, memory),
-                    "tasks": convert(int, tasks),
+                    "cpu": cpu_percent,
+                    "memory": memory,
+                    "tasks": tasks,
                 },
             }
             if prefix:
