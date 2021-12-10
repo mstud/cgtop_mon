@@ -8,7 +8,7 @@ e.g., in `/etc/systemd/system.conf` set:
 DefaultMemoryAccounting=yes
 DefaultCPUAccounting=yes
 ```
-and probably reboot (or activate it on a per-unit level via `systemctl set-property ...`)
+and probably reboot (or activate it on a per-unit level via `systemctl set-property ...`). Note that memory values for already running services might be bogus until restarted when MemoryAccounting is activated mid-runtime.
 
 ## Installation
 
