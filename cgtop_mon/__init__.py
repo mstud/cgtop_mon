@@ -47,7 +47,7 @@ def main():
         to_send = []
         for row in p.stdout:
             line = row.rstrip().split()
-            if not line:
+            if not line or len(line) != 6:
                 continue
             cg, tasks, cpu_percent, memory, input_per_sec, output_per_sec = line
             cpu_percent = convert(float, cpu_percent)
