@@ -16,7 +16,7 @@ def convert(data_type, string):
     return ret
 
 def main():
-    send_buffer_size = os.getenv("CGTOP_MON_SEND_BUFSIZE", 10)
+    send_buffer_size = int(os.getenv("CGTOP_MON_SEND_BUFSIZE", 10))
 
     client = InfluxDBClient(
         os.getenv("CGTOP_MON_INFLUXDB_HOST"),
