@@ -8,6 +8,7 @@ from influxdb import InfluxDBClient
 
 LOG_THROTTLE_RATE_S = 60
 
+
 def convert(data_type, string):
     try:
         ret = data_type(string)
@@ -15,15 +16,32 @@ def convert(data_type, string):
         return None
     return ret
 
+
 def main():
     send_buffer_size = int(os.getenv("CGTOP_MON_SEND_BUFSIZE", 10))
 
+    ssl = (
+        True
+        if os.getenv("CGTOP_MON_INFLUXDB_SSL", "false").lower()
+        in ["yes", "on", "true", "1"]
+        else False
+    )
+    verify_ssl = (
+        True
+        if os.getenv(
+            "CGTOP_MON_INFLUXDB_VERIFY_SSL", "true" if ssl else "false"
+        ).lower()
+        in ["yes", "on", "true", "1"]
+        else False
+    )
     client = InfluxDBClient(
         os.getenv("CGTOP_MON_INFLUXDB_HOST"),
         os.getenv("CGTOP_MON_INFLUXDB_PORT", 8086),
         os.getenv("CGTOP_MON_INFLUXDB_USER"),
         os.getenv("CGTOP_MON_INFLUXDB_PASSWORD"),
         os.getenv("CGTOP_MON_INFLUXDB_DATABASE"),
+        ssl=ssl,
+        verify_ssl=verify_ssl,
     )
 
     cmd = [
@@ -54,7 +72,7 @@ def main():
             memory = convert(int, memory)
             tasks = convert(int, tasks)
             if (cpu_percent is None) and (memory is None) and (tasks is None):
-                continue # no usable datapoint, skip
+                continue  # no usable datapoint, skip
 
             cg_split = cg.split("/")
             name = cg_split[-1]
