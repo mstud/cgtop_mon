@@ -1,0 +1,48 @@
+[build-system]
+requires = ["uv_build>=0.11.7,<0.12"]
+build-backend = "uv_build"
+
+[project]
+name = "cgtop_mon"
+version = "1.0"
+description = "Collect CPU, memory, task, and I/O metrics from systemd-cgtop and write them to InfluxDB."
+readme = "README.md"
+requires-python = ">=3.5"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [
+  { name = "Maik Schmidt" },
+]
+dependencies = [
+  "influxdb",
+]
+keywords = [
+  "cgroups",
+  "influxdb",
+  "metrics",
+  "monitoring",
+  "systemd",
+]
+classifiers = [
+  "Intended Audience :: System Administrators",
+  "Operating System :: POSIX :: Linux",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.5",
+  "Topic :: System :: Monitoring",
+  "Topic :: System :: Systems Administration",
+]
+
+[project.scripts]
+cgtop_mon = "cgtop_mon:main"
+
+[project.urls]
+Homepage = "https://github.com/mstud/cgtop_mon"
+Repository = "https://github.com/mstud/cgtop_mon"
+Issues = "https://github.com/mstud/cgtop_mon/issues"
+
+[tool.uv.build-backend]
+module-name = "cgtop_mon"
+module-root = ""
+source-include = ["tests/**"]
+source-exclude = [".mypy_cache"]

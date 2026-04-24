@@ -30,27 +30,64 @@ reliable.
 
 ## Installation
 
-Install the package:
+From PyPI:
 
 ```bash
-pip install .
+pip install cgtop_mon
 ```
 
-Install the configuration and service unit:
+Or with `uv`:
 
 ```bash
-cp cgtop_mon.conf /etc/cgtop_mon.conf
-cp cgtop_mon.service /etc/systemd/system/cgtop_mon.service
+uv tool install cgtop_mon
+```
+
+From a local checkout during development:
+
+```bash
+uv sync
+```
+
+The package ships sample systemd files under `cgtop_mon/resources/`. To locate
+them after installation:
+
+```bash
+python -c "import cgtop_mon, os; print(os.path.join(os.path.dirname(cgtop_mon.__file__), 'resources'))"
+```
+
+Copy the templates into place:
+
+```bash
+cp /path/to/site-packages/cgtop_mon/resources/cgtop_mon.conf /etc/cgtop_mon.conf
+cp /path/to/site-packages/cgtop_mon/resources/cgtop_mon.service /etc/systemd/system/cgtop_mon.service
 ```
 
 Edit `/etc/cgtop_mon.conf` and set at least the required InfluxDB connection
-variables.
-
-Enable and start the service:
+variables, then enable and start the service:
 
 ```bash
 systemctl daemon-reload
 systemctl enable --now cgtop_mon.service
+```
+
+## Development
+
+Run the test suite:
+
+```bash
+uv run python -m unittest discover -s tests -q
+```
+
+Build distributions:
+
+```bash
+uv build --no-sources
+```
+
+Publish to PyPI:
+
+```bash
+uv publish
 ```
 
 ## How It Works
