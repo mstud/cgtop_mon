@@ -65,8 +65,10 @@ cgroup row into an InfluxDB point.
 - Depending on what `systemd-cgtop` reports, fields can include `cpu`,
   `memory`, `tasks`, `io_read`, and `io_write`.
 
-Rows that contain no usable metrics are skipped. InfluxDB write failures are
-printed to stdout, but repeated errors are throttled to avoid log spam.
+Rows that contain no usable metrics are skipped. InfluxDB write failures switch
+the sender into a degraded mode with exponential backoff, bounded buffering,
+and client recreation after repeated failures. Recovery is logged once the
+connection works again.
 
 ## Configuration
 
@@ -93,6 +95,7 @@ The service unit reads its environment from `/etc/cgtop_mon.conf`.
 | `CGTOP_MON_BLACKLIST` | empty | Comma-separated list of cgroup name patterns to exclude. |
 | `CGTOP_MON_WHITELIST` | empty | Comma-separated list of cgroup name patterns to include. When set, only matching names are accepted. |
 | `CGTOP_MON_SEND_BUFSIZE` | `10` | Number of points buffered before writing to InfluxDB. |
+| `CGTOP_MON_MAX_PENDING_POINTS` | `1000` | Maximum number of unsent points kept in memory during an outage. Oldest points are dropped once the limit is reached. |
 | `CGTOP_MON_HOSTNAME` | local hostname | Override the measurement name written to InfluxDB. |
 
 ### Filter Semantics
@@ -131,8 +134,20 @@ CGTOP_MON_GROUP=system.slice
 CGTOP_MON_BLACKLIST=*.scope
 CGTOP_MON_WHITELIST=*.service
 CGTOP_MON_SEND_BUFSIZE=10
+CGTOP_MON_MAX_PENDING_POINTS=1000
 CGTOP_MON_HOSTNAME=node-01
 ```
+
+## Failure Handling
+
+When InfluxDB writes fail, `cgtop_mon`:
+
+- logs a warning when it enters degraded mode
+- retries with exponential backoff from 1 second up to 60 seconds
+- recreates the InfluxDB client after 3 consecutive write failures
+- buffers unsent points in memory up to `CGTOP_MON_MAX_PENDING_POINTS`
+- drops the oldest points if the backlog limit is exceeded
+- logs a single recovery message with outage duration and drop count after a successful write
 
 ## Service Management
 
