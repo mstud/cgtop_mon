@@ -1,12 +1,13 @@
 # cgtop_mon
 
-Get CPU and memory usage from systemd-cgtop and write to an InfluxDB database.
+Get CPU, memory, and I/O usage from systemd-cgtop and write to an InfluxDB database.
 
-MemoryAccounting and CPUAccounting in systemd must be enabled for this to work.
+MemoryAccounting, IOAccounting, and CPUAccounting in systemd must be enabled for this to work.
 e.g., in `/etc/systemd/system.conf` set:
 ```
 DefaultMemoryAccounting=yes
 DefaultCPUAccounting=yes
+DefaultIOAccounting=yes
 ```
 and probably reboot (or activate it on a per-unit level via `systemctl set-property ...`). Note that memory values for already running services might be bogus until restarted when MemoryAccounting is activated mid-runtime.
 

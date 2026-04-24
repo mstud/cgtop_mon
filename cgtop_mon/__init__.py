@@ -4,7 +4,6 @@ import subprocess
 import os
 import socket
 from time import time
-from influxdb import InfluxDBClient
 
 LOG_THROTTLE_RATE_S = 60
 
@@ -17,7 +16,48 @@ def convert(data_type, string):
     return ret
 
 
+def build_json_body(cg, tasks, cpu_percent, memory, input_per_sec, output_per_sec):
+    fields = {
+        "cpu": convert(float, cpu_percent),
+        "memory": convert(int, memory),
+        "tasks": convert(int, tasks),
+        "io_read": convert(int, input_per_sec),
+        "io_write": convert(int, output_per_sec),
+    }
+    fields = {name: value for name, value in fields.items() if value is not None}
+    if not fields:
+        return None
+
+    cg_split = cg.split("/")
+    name = cg_split[-1]
+    prefix = "/".join(cg_split[:-1])
+    if cg == "/":
+        name = "/"
+
+    json_body = {
+        "measurement": os.getenv("CGTOP_MON_HOSTNAME", socket.gethostname()),
+        "tags": {"name": name},
+        "fields": fields,
+    }
+    if prefix:
+        json_body["tags"]["prefix"] = prefix
+    return json_body
+
+
+def parse_row(row):
+    line = row.rstrip().split()
+    if not line or len(line) != 6:
+        return None
+    return build_json_body(*line)
+
+
+def is_allowed_name(name, blacklist, whitelist):
+    return name not in blacklist and (not whitelist or name in whitelist)
+
+
 def main():
+    from influxdb import InfluxDBClient
+
     send_buffer_size = int(os.getenv("CGTOP_MON_SEND_BUFSIZE", 10))
 
     ssl = (
@@ -64,36 +104,13 @@ def main():
     ) as p:
         to_send = []
         for row in p.stdout:
-            line = row.rstrip().split()
-            if not line or len(line) != 6:
+            json_body = parse_row(row)
+            if json_body is None:
                 continue
-            cg, tasks, cpu_percent, memory, input_per_sec, output_per_sec = line
-            cpu_percent = convert(float, cpu_percent)
-            memory = convert(int, memory)
-            tasks = convert(int, tasks)
-            if (cpu_percent is None) and (memory is None) and (tasks is None):
-                continue  # no usable datapoint, skip
+            name = json_body["tags"]["name"]
 
-            cg_split = cg.split("/")
-            name = cg_split[-1]
-            prefix = "/".join(cg_split[:-1])
-            if cg == "/":
-                name = "/"
-
-            if name in blacklist or (whitelist and (name not in whitelist)):
+            if not is_allowed_name(name, blacklist, whitelist):
                 continue
-
-            json_body = {
-                "measurement": os.getenv("CGTOP_MON_HOSTNAME", socket.gethostname()),
-                "tags": {"name": name},
-                "fields": {
-                    "cpu": cpu_percent,
-                    "memory": memory,
-                    "tasks": tasks,
-                },
-            }
-            if prefix:
-                json_body["tags"]["prefix"] = prefix
 
             to_send.append(json_body)
             if len(to_send) > send_buffer_size:
