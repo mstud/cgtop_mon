@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import fnmatch
 import subprocess
 import os
 import socket
@@ -51,8 +52,14 @@ def parse_row(row):
     return build_json_body(*line)
 
 
+def matches_any_pattern(name, patterns):
+    return any(fnmatch.fnmatchcase(name, pattern) for pattern in patterns)
+
+
 def is_allowed_name(name, blacklist, whitelist):
-    return name not in blacklist and (not whitelist or name in whitelist)
+    return not matches_any_pattern(name, blacklist) and (
+        not whitelist or matches_any_pattern(name, whitelist)
+    )
 
 
 def main():
